@@ -22,6 +22,7 @@ main.exe: main.o cnpy.o calibrator.o
 .PHONY: test
 test:
 	make clean
+	# Since no target is specified, the default target (all) will be built.
 	make -j3
 	python3 $(SOURCE_PY)
 	./$(TARGET_EXE) > result-C++.log

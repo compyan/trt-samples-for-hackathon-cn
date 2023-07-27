@@ -10,9 +10,12 @@ rm -rf ./*.onnx ./*.plan ./*.cache ./*.lock ./*.json ./*.raw ./*.log ./*.o ./*.d
 python3 getOnnxModel.py
 
 # 01-Run trtexec from ONNX file without any more option
+# when you use it in a command like `command > result.log 2>&1`,it means "run command",send
+# all the outputs(both standard output and standard error)  to `result.log`
 trtexec \
     --onnx=modelA.onnx \
     > result-01.log 2>&1
+
 
 # 02-Parse ONNX file, build and save TensorRT engine with more options (see HelpInformation.txt to get more information)
 # Notie:
@@ -37,8 +40,8 @@ trtexec \
     > result-02.log 2>&1
 
 # 03-Load TensorRT engine built above and do inference
-trtexec model-02.plan \
-    --trt \
+trtexec \
+    --loadEngine=./model-02.plan \
     --shapes=tensorX:4x1x28x28 \
     --noDataTransfers \
     --useSpinWait \
