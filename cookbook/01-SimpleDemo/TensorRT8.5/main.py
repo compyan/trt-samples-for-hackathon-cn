@@ -66,6 +66,7 @@ def run():
     nIO = engine.num_io_tensors                                                 # since TensorRT 8.5, the concept of Binding is replaced by I/O Tensor, all the APIs with "binding" in their name are deprecated
     lTensorName = [engine.get_tensor_name(i) for i in range(nIO)]               # get a list of I/O tensor names of the engine, because all I/O tensor in Engine and Excution Context are indexed by name, not binding number like TensorRT 8.4 or before
     nInput = [engine.get_tensor_mode(lTensorName[i]) for i in range(nIO)].count(trt.TensorIOMode.INPUT)  # get the count of input tensor
+    print(f"nIO {nIO}  nInput {nInput}")
     #nOutput = [engine.get_tensor_mode(lTensorName[i]) for i in range(nIO)].count(trt.TensorIOMode.OUTPUT)  # get the count of output tensor
 
     context = engine.create_execution_context()                                 # create Excution Context from the engine (analogy to a GPU context, or a CPU process)
@@ -74,13 +75,20 @@ def run():
         print("[%2d]%s->" % (i, "Input " if i < nInput else "Output"), engine.get_tensor_dtype(lTensorName[i]), engine.get_tensor_shape(lTensorName[i]), context.get_tensor_shape(lTensorName[i]), lTensorName[i])
 
     bufferH = []                                                                # prepare the memory buffer on host and device
+    print(f"bufferH size1 { sum(array.nbytes for array in bufferH)}")
     bufferH.append(np.ascontiguousarray(data))
+    print(f"bufferH size2 { sum(array.nbytes for array in bufferH)}")
+    # 预留host输出内存
     for i in range(nInput, nIO):
+        print(f"lTensorName {i} {lTensorName[i]}")
         bufferH.append(np.empty(context.get_tensor_shape(lTensorName[i]), dtype=trt.nptype(engine.get_tensor_dtype(lTensorName[i]))))
+        print(f"bufferH size3 { sum(array.nbytes for array in bufferH)}")
     bufferD = []
     for i in range(nIO):
         bufferD.append(cudart.cudaMalloc(bufferH[i].nbytes)[1])
 
+    # the expression  `bufferH[i].ctypes.data` is used to get the memory address of the beginning of an array
+    # when you are working with a libraries that need direct memory access,such as some C or CUDA functions. 
     for i in range(nInput):                                                     # copy input data from host buffer into device buffer
         cudart.cudaMemcpy(bufferD[i], bufferH[i].ctypes.data, bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
 
